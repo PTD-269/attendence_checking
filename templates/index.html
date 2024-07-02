@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Capture and Send Image</title>
+</head>
+<body>
+    <video id="video" autoplay></video>
+    <button id="capture">Capture Image</button>
+    <script>
+        const video = document.getElementById('video');
+        const captureButton = document.getElementById('capture');
+
+        // Function to capture and send image data
+        async function captureAndSend() {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            ctx.drawImage(video, 0, 0);
+
+            const imageDataUrl = canvas.toDataURL('image/jpeg'); // adjust format if needed
+            const imageData = imageDataUrl.replace(/^data:image\/(png|jpeg);base64,/, "");
+
+            // Send image data to server using Fetch API
+            try {
+                const response = await fetch('/detect', {
+                    method: 'POST',
+                    body: JSON.stringify({ image: imageData }),
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const data = await response.json();
+                console.log('Server response:', data);
+
+                // Display success or error message based on server response
+                if (data.message) {
+                    alert(data.message); // adjust as needed for your UI
+                } else if (data.error) {
+                    alert(data.error);
+                }
+            } catch (error) {
+                console.error('Error sending image:', error);
+                alert('Failed to send image'); // adjust as needed for your UI
+            }
+        }
+
+        navigator.mediaDevices.getUserMedia({ video: true })
+          .then(stream => {
+            video.srcObject = stream;
+          })
+          .catch(error => {
+            console.error('Error accessing camera:', error);
+          });
+
+        // Capture and send image every 3 seconds
+        captureButton.addEventListener('click', () => {
+            setInterval(captureAndSend, 3000); // 3000 milliseconds = 3 seconds
+        });
+    </script>
+</body>
+</html>
